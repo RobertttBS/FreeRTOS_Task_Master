@@ -7,7 +7,7 @@
 #include "main.h"
 
 const char *msg_inv = "!!!!Invalid option!!!!\n";
-uint8_t Buffer_Src[]={0,1,2,3,4,5,6,7,8,9};
+uint8_t Buffer_Src[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
 uint8_t Buffer_Dest[10];
 
 state_t curr_state = sMainMenu;
@@ -131,6 +131,8 @@ void cmd_handler_task(void *param) {
 						eSetValueWithOverwrite);
 				break;
 			case sDmaTransfer:
+				xTaskNotify(handle_dma_task, (uint32_t )&cmd,
+						eSetValueWithOverwrite);
 				break;
 
 			}
@@ -326,18 +328,41 @@ portTASK_FUNCTION( led_task, pvParameters ) {
 	}
 }
 
-portTASK_FUNCTION( dma_task, pvParameters )
-{
+portTASK_FUNCTION( dma_task, pvParameters ) {
+	uint32_t cmd_addr;
+	command_t *cmd;
+	const char *msg_dma = "========================\n"
+			"|          DMA         |\n"
+			"========================\n"
+			"Enter a string here : ";
 
 	while (1) {
 		/*Wait for notification (Notify wait) */
 		xTaskNotifyWait(0, 0, NULL, portMAX_DELAY);
 
-		HAL_DMA_Start(&hdma_memtomem_dma2_stream0, (uint32_t) (Buffer_Src), (uint32_t) (Buffer_Dest), 10);
-		while(HAL_DMA_PollForTransfer(&hdma_memtomem_dma2_stream0, HAL_DMA_FULL_TRANSFER, 100) != HAL_OK)
-		{
-		  __NOP();
+		xQueueSend(q_print, &msg_dma, portMAX_DELAY);
+
+		/*wait for LED command (Notify wait) */
+		xTaskNotifyWait(0, 0, &cmd_addr, portMAX_DELAY);
+		cmd = (command_t*) cmd_addr;
+
+		HAL_DMA_Start(&hdma_memtomem_dma2_stream0, (uint32_t) (cmd->payload),
+				(uint32_t) (Buffer_Dest), 10);
+		while (HAL_DMA_PollForTransfer(&hdma_memtomem_dma2_stream0,
+				HAL_DMA_FULL_TRANSFER, 100) != HAL_OK) {
+			__NOP();
 		}
+
+		char *msg_error = "DMA error\n";
+		for (int i = 0; i < 10; i++) {
+			if (cmd->payload[i] != Buffer_Dest[i]) {
+				xQueueSend(q_print, &msg_error, portMAX_DELAY);
+				break;
+			}
+		}
+
+		/* update state variable */
+		curr_state = sMainMenu;
 
 		/*Notify menu task */
 		xTaskNotify(handle_menu_task, 0, eNoAction);
