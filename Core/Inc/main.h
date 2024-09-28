@@ -54,6 +54,7 @@ typedef enum {
 	sRtcTimeConfig,
 	sRtcDateConfig,
 	sRtcReport,
+	sDmaTransfer,
 } state_t;
 
 extern TimerHandle_t  handle_led_timer;
@@ -63,12 +64,14 @@ extern QueueHandle_t q_print;
 
 extern RTC_HandleTypeDef hrtc;
 extern UART_HandleTypeDef huart2;
+extern DMA_HandleTypeDef hdma_memtomem_dma2_stream0;
 
 extern xTaskHandle handle_cmd_task;
 extern xTaskHandle handle_menu_task;
 extern xTaskHandle handle_uart_task;
 extern xTaskHandle handle_led_task;
 extern xTaskHandle handle_rtc_task;
+extern xTaskHandle handle_dma_task;
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
@@ -92,6 +95,7 @@ void uart_task(void *param);
 void cmd_handler_task(void *param);
 void led_task(void *param);
 void rtc_task(void *param);
+void dma_task(void *param);
 
 // RTC
 void show_time_date(void);

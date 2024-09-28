@@ -7,6 +7,8 @@
 #include "main.h"
 
 const char *msg_inv = "!!!!Invalid option!!!!\n";
+uint8_t Buffer_Src[]={0,1,2,3,4,5,6,7,8,9};
+uint8_t Buffer_Dest[10];
 
 state_t curr_state = sMainMenu;
 
@@ -19,7 +21,7 @@ void menu_task(void *param) {
 			"========================\n"
 			"LED effect    ----> 0\n"
 			"Date and time ----> 1\n"
-			"Exit          ----> 2\n"
+			"DMA           ----> 2\n"
 			"Enter your choice here : ";
 
 	while (1) {
@@ -45,6 +47,10 @@ void menu_task(void *param) {
 				xTaskNotify(handle_rtc_task, 0, eNoAction);
 				break;
 			case 2: /*implement exit */
+				const char *msg_dma = "Switch to DMA task\n";
+				xQueueSend(q_print, &msg_dma, portMAX_DELAY);
+				curr_state = sDmaTransfer;
+				xTaskNotify(handle_dma_task, 0, eNoAction);
 				break;
 			default:
 				xQueueSend(q_print, &msg_inv, portMAX_DELAY);
@@ -123,6 +129,8 @@ void cmd_handler_task(void *param) {
 			case sRtcReport:
 				xTaskNotify(handle_rtc_task, (uint32_t )&cmd,
 						eSetValueWithOverwrite);
+				break;
+			case sDmaTransfer:
 				break;
 
 			}
@@ -317,3 +325,22 @@ portTASK_FUNCTION( led_task, pvParameters ) {
 		xTaskNotify(handle_menu_task, 0, eNoAction);
 	}
 }
+
+portTASK_FUNCTION( dma_task, pvParameters )
+{
+
+	while (1) {
+		/*Wait for notification (Notify wait) */
+		xTaskNotifyWait(0, 0, NULL, portMAX_DELAY);
+
+		HAL_DMA_Start(&hdma_memtomem_dma2_stream0, (uint32_t) (Buffer_Src), (uint32_t) (Buffer_Dest), 10);
+		while(HAL_DMA_PollForTransfer(&hdma_memtomem_dma2_stream0, HAL_DMA_FULL_TRANSFER, 100) != HAL_OK)
+		{
+		  __NOP();
+		}
+
+		/*Notify menu task */
+		xTaskNotify(handle_menu_task, 0, eNoAction);
+	}
+}
+
