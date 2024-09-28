@@ -1,0 +1,10 @@
+../Core/Src/task_handlers.c:13:6:menu_task	6
+../Core/Src/task_handlers.c:64:6:uart_task	1
+../Core/Src/task_handlers.c:75:19:extract_command	5
+../Core/Src/task_handlers.c:97:6:cmd_handler_task	6
+../Core/Src/task_handlers.c:133:6:led_effect_stop	1
+../Core/Src/task_handlers.c:137:20:led_effect	1
+../Core/Src/task_handlers.c:147:6:rtc_time_config	8
+../Core/Src/task_handlers.c:183:6:rtc_date_config	8
+../Core/Src/task_handlers.c:215:1:rtc_task	6
+../Core/Src/task_handlers.c:278:1:led_task	7
